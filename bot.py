@@ -36,7 +36,7 @@ async def ai_responce(message: Message):
         get_prompt = re.search(r"^/ai\s(.+)", message.text)
 
         if get_prompt != None:
-            await message.reply(chat.send_message(get_prompt.group(1)).text)
+            await message.reply(chat.send_message(get_prompt.group(1)).text, parse_mode="markdown")
 
         else:
             await message.answer("❗ Пожалуйста пришлите сообщение (/ai <Ваше сообщение>)")
