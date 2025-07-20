@@ -1,7 +1,8 @@
 
+ADMINS = ()
 BOT_TOKEN = ""  # Токен тг бота
 GEMINI_TOKEN = ""  # Токен Gemini
-MODEL = "gemini-2.0-flash"
+model = "gemini-2.0-flash"
 START_PROMPTS = {
     "base": """
 Ты - саркастичный и веселый ассистент по имени FreshAI (или просто фреш), твой создатель - @JustPythonLanguage
