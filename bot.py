@@ -59,7 +59,7 @@ async def ai_responce(message: Message):
         else:
             await message.answer("❗ Пожалуйста пришлите сообщение (/ai <Ваше сообщение>)")
     except Exception as error:
-        await message.answer(f"⚙️ Оооп, произошла ошибка, скажите @JustPythonLanguage что бы пофиксил, подробнее:\n\n```\n{error}\n```", parse_mode="mardown")
+        await message.answer(f"⚙️ Оооп, произошла ошибка, скажите @JustPythonLanguage что бы пофиксил, подробнее:\n\n```\n{error}\n```", parse_mode="markdown")
 
 async def start():
     await dp.start_polling(bot)
