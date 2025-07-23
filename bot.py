@@ -27,42 +27,42 @@ async def disable_command(message: Message):
     global disable
 
     # Проверка на админа
-    if message.from_user.id in ADMINS == False:
-        await message.answer("❗ У вас нет прав на выполнение команды")
+    if message.from_user.id in ADMINS:    
+        # Перевод в состояние
+        disable = True if not disable else False
+
+        # Уведомление
+        await message.answer(f'✅ Бот переведен в состояние: {"спящий" if disable else "работающий"}')
         return
     
-    # Перевод в состояние
-    disable = True if not disable else False
-
-    # Уведомление
-    await message.answer(f'✅ Бот переведен в состояние: {"спящий" if disable else "работающий"}')
+    await message.answer("❗ У вас нет прав на выполнение команды")
+        
 
 @dp.message(Command("set_model"))
 async def set_model(message: Message):
     global model
 
     # Проверка на админа
-    if message.from_user.id not in ADMINS == False:
-        await message.answer("❗ У вас нет прав на выполнение команды")
-        return
+    if message.from_user.id in ADMINS:
 
-    # получение модели
-    get_model = re.search(r"^/set_model\s(.+)", message.text)
+        # получение модели
+        get_model = re.search(r"^/set_model\s(.+)", message.text)
 
-    # Проверка на присутствие текста
-    if get_model == None:
-        await message.answer("❗ Пожалуйста укажите модель (/set_model <имя модели>)")
-        return
-    
-    # Получение
-    model = get_model.group(1)
-
-    # Изменение
-    await message.answer("✅ Успешно изменена модель")
-
+        # Проверка на присутствие текста
+        if get_model == None:
+            await message.answer("❗ Пожалуйста укажите модель (/set_model <имя модели>)")
+            return
         
+        # Получение
+        model = get_model.group(1)
+
+        # Изменение
+        await message.answer("✅ Успешно изменена модель")
+        return
 
 
+    await message.answer("❗ У вас нет прав на выполнение команды")
+        
 
 @dp.message(Command("reload"))
 async def reload_chat(message: Message):
