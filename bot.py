@@ -7,6 +7,8 @@ import asyncio
 import re
 
 
+disable = False
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 genai.configure(api_key=GEMINI_TOKEN)
@@ -19,45 +21,86 @@ chat = chat_model.start_chat()
 # Вводный промпт
 response = chat.send_message(START_PROMPTS["base"])
 
+
+@dp.message(Command("disable"))
+async def disable_command(message: Message):
+    global disable
+
+    # Проверка на админа
+    if message.from_user.id in ADMINS == False:
+        await message.answer("❗ У вас нет прав на выполнение команды")
+        return
+    
+    # Перевод в состояние
+    disable = True if not disable else False
+
+    # Уведомление
+    await message.answer(f'✅ Бот переведен в состояние: {"спящий" if disable else "работающий"}')
+
 @dp.message(Command("set_model"))
 async def set_model(message: Message):
     global model
 
-    if str(message.from_user.id) in ADMINS:
-        get_model = re.search(r"^/set_model\s(.+)", message.text)
-
-        if get_model != None:
-            model = get_model.group(1)
-            await message.answer("✅ Успешно изменена модель")
-
-        else:
-            await message.answer("❗ Пожалуйста укажите модель (/set_model <имя модели>)")
-
-    else:
+    # Проверка на админа
+    if message.from_user.id not in ADMINS == False:
         await message.answer("❗ У вас нет прав на выполнение команды")
+        return
+
+    # получение модели
+    get_model = re.search(r"^/set_model\s(.+)", message.text)
+
+    # Проверка на присутствие текста
+    if get_model == None:
+        await message.answer("❗ Пожалуйста укажите модель (/set_model <имя модели>)")
+        return
+    
+    # Получение
+    model = get_model.group(1)
+
+    # Изменение
+    await message.answer("✅ Успешно изменена модель")
+
+        
+
 
 
 @dp.message(Command("reload"))
 async def reload_chat(message: Message):
     global chat
+
+    # Создание нового чата
     chat = chat_model.start_chat()
+
+    # Уведомление
     await message.answer("❗Создан новый чат")
+
+    # Стартовый промпт
     response = chat.send_message(START_PROMPTS["base"])
 
 @dp.message(Command("start"))
 async def start_command(message: Message):
+    if disable:
+        return
+    
     await message.answer("Привет я FreshAI, могу общатся с вами и развлекать :) А так же мой код скоро будет доступен на github!")
 
 @dp.message(Command("ai"))
 async def ai_responce(message: Message):
+    if disable:
+        return
+
     try:
+        # Парсинг сообщения
         get_prompt = re.search(r"^/ai\s(.+)", message.text)
 
-        if get_prompt != None:
-            await message.reply(chat.send_message(get_prompt.group(1)).text, parse_mode="markdown")
-
-        else:
+        # Проверка
+        if get_prompt == None:
             await message.answer("❗ Пожалуйста пришлите сообщение (/ai <Ваше сообщение>)")
+            return
+        
+        # Ответ
+        await message.reply(chat.send_message(get_prompt.group(1)).text, parse_mode="markdown")
+            
     except Exception as error:
         await message.answer(f"⚙️ Оооп, произошла ошибка, скажите @JustPythonLanguage что бы пофиксил, подробнее:\n\n```\n{error}\n```", parse_mode="markdown")
 
