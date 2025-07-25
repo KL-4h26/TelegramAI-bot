@@ -1,4 +1,4 @@
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, exceptions
 from aiogram.filters import Command
 from aiogram.types import Message
 from config import *
@@ -89,19 +89,31 @@ async def ai_responce(message: Message):
     if disable:
         return
 
-    try:
-        # Парсинг сообщения
-        get_prompt = re.search(r"^/ai\s(.+)", message.text)
+    # Парсинг сообщения
+    get_prompt = re.search(r"^/ai\s(.+)", message.text)
 
-        # Проверка
-        if get_prompt == None:
-            await message.answer("❗ Пожалуйста пришлите сообщение (/ai <Ваше сообщение>)")
+    # Проверка
+    if get_prompt == None:
+        await message.answer("❗ Пожалуйста пришлите сообщение (/ai <Ваше сообщение>)")
+        return
+        
+    # Ответ
+    try:
+        # Попытка отправки сообщения
+        await message.reply(chat.send_message(get_prompt.group(1)).text, parse_mode="markdown")
+
+    except exceptions.TelegramBadRequest as error:
+        # Проверяем что это конкретно ошибка форматирования
+        if "Can't parse entities" in str(error):
+            # Отправляем без markdown
+            await message.reply(chat.send_message(get_prompt.group(1)).text)
             return
         
-        # Ответ
-        await message.reply(chat.send_message(get_prompt.group(1)).text, parse_mode="markdown")
-            
+        # Если ошибка не в markdown
+        await message.answer(f"⚙️ Оооп, произошла ошибка, скажите @JustPythonLanguage что бы пофиксил, подробнее:\n\n```\n{error}\n```", parse_mode="markdown")
+
     except Exception as error:
+        # Сообщение об ошибке
         await message.answer(f"⚙️ Оооп, произошла ошибка, скажите @JustPythonLanguage что бы пофиксил, подробнее:\n\n```\n{error}\n```", parse_mode="markdown")
 
 async def start():
