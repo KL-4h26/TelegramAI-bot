@@ -104,7 +104,7 @@ async def ai_responce(message: Message):
 
     except exceptions.TelegramBadRequest as error:
         # Проверяем что это конкретно ошибка форматирования
-        if "Can't parse entities" in str(error):
+        if "can't parse entities" in str(error):
             # Отправляем без markdown
             await message.reply(chat.send_message(get_prompt.group(1)).text)
             return
