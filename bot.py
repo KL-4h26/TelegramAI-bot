@@ -16,10 +16,27 @@ genai.configure(api_key=GEMINI_TOKEN)
 chat_model = genai.GenerativeModel(model)
 
 # Создание чата
-chat = chat_model.start_chat()
+# chat = chat_model.start_chat()
 
 # Вводный промпт
-response = chat.send_message(START_PROMPTS["base"])
+# response = chat.send_message(START_PROMPTS["base"])
+
+# Чаты
+chats = {
+
+}
+
+def user_chat(user_id: int):
+    global chats
+
+    if user_id in chats:
+        return chats[user_id]
+    
+    chats[user_id] = chat_model.start_chat()
+    response = chats[user_id].send_message(START_PROMPTS["base"])
+
+    return chats[user_id]
+    
 
 
 @dp.message(Command("disable"))
@@ -66,16 +83,30 @@ async def set_model(message: Message):
 
 @dp.message(Command("reload"))
 async def reload_chat(message: Message):
-    global chat
+    global chats
 
     # Создание нового чата
-    chat = chat_model.start_chat()
+    chats[message.from_user.id] = chat_model.start_chat()
+    response = chats[message.from_user.id].send_message(START_PROMPTS["base"])
 
     # Уведомление
     await message.answer("❗Создан новый чат")
 
-    # Стартовый промпт
-    response = chat.send_message(START_PROMPTS["base"])
+@dp.message(Command("global_reload"))
+async def gobal_reload_command(message: Message):
+    global chats
+
+    # Проверка на админа
+    if message.from_user.id in ADMINS:
+        # await message.answer(str(chats))
+        chats = {
+
+        }
+        await message.answer("✅ Все чаты успешно очищены")
+        return
+    
+    await message.answer("❗ У вас нет прав на выполнение команды")
+
 
 @dp.message(Command("start"))
 async def start_command(message: Message):
@@ -97,16 +128,16 @@ async def ai_responce(message: Message):
         await message.answer("❗ Пожалуйста пришлите сообщение (/ai <Ваше сообщение>)")
         return
         
-    # Ответ
+    # Ответ chat
     try:
         # Попытка отправки сообщения
-        await message.reply(chat.send_message(get_prompt.group(1)).text, parse_mode="markdown")
+        await message.reply(user_chat(message.from_user.id).send_message(get_prompt.group(1)).text, parse_mode="markdown")
 
     except exceptions.TelegramBadRequest as error:
         # Проверяем что это конкретно ошибка форматирования
         if "can't parse entities" in str(error):
             # Отправляем без markdown
-            await message.reply(chat.send_message(get_prompt.group(1)).text)
+            await message.reply(user_chat(message.from_user.id).send_message(get_prompt.group(1)).text)
             return
         
         # Если ошибка не в markdown
