@@ -2,7 +2,7 @@ from aiogram import Bot, Dispatcher, exceptions
 from aiogram.filters import Command
 from aiogram.types import Message
 from config import *
-import google.generativeai as genai
+from openai import OpenAI
 import asyncio
 import re
 
@@ -11,9 +11,10 @@ disable = False
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-genai.configure(api_key=GEMINI_TOKEN)
-
-chat_model = genai.GenerativeModel(model)
+client = OpenAI(
+    base_url="https://api.onlysq.ru/ai/openai",
+    api_key=OPENAI_TOKEN,
+)
 
 # Создание чата
 # chat = chat_model.start_chat()
@@ -32,8 +33,7 @@ def user_chat(user_id: int):
     if user_id in chats:
         return chats[user_id]
     
-    chats[user_id] = chat_model.start_chat()
-    response = chats[user_id].send_message(START_PROMPTS["base"])
+    chats[user_id] = [{"role": "system", "content": START_PROMPTS["base"]}]
 
     return chats[user_id]
     
@@ -86,8 +86,7 @@ async def reload_chat(message: Message):
     global chats
 
     # Создание нового чата
-    chats[message.from_user.id] = chat_model.start_chat()
-    response = chats[message.from_user.id].send_message(START_PROMPTS["base"])
+    chats[message.from_user.id] = [{"role": "system", "content": START_PROMPTS["base"]}]
 
     # Уведомление
     await message.answer("❗Создан новый чат")
@@ -119,6 +118,9 @@ async def start_command(message: Message):
 async def ai_responce(message: Message):
     if disable:
         return
+    
+    # Создаем чат если еще не создан
+    user_chat(message.from_user.id)
 
     # Парсинг сообщения
     get_prompt = re.search(r"^/ai\s(.+)", message.text)
@@ -127,17 +129,25 @@ async def ai_responce(message: Message):
     if get_prompt == None:
         await message.answer("❗ Пожалуйста пришлите сообщение (/ai <Ваше сообщение>)")
         return
+
+
+    chats[message.from_user.id].append({"role": "user", "content": get_prompt.group(1)})
+  
+
+    completion = client.chat.completions.create(
+        model=model,
+        messages=user_chat(message.from_user.id)
+    )
         
     # Ответ chat
     try:
-        # Попытка отправки сообщения
-        await message.reply(user_chat(message.from_user.id).send_message(get_prompt.group(1)).text, parse_mode="markdown")
+        await message.reply(completion.choices[0].message.content, parse_mode="markdown")
 
     except exceptions.TelegramBadRequest as error:
         # Проверяем что это конкретно ошибка форматирования
         if "can't parse entities" in str(error):
             # Отправляем без markdown
-            await message.reply(user_chat(message.from_user.id).send_message(get_prompt.group(1)).text)
+            await message.reply(completion.choices[0].message.content)
             return
         
         # Если ошибка не в markdown
@@ -146,6 +156,10 @@ async def ai_responce(message: Message):
     except Exception as error:
         # Сообщение об ошибке
         await message.answer(f"⚙️ Оооп, произошла ошибка, скажите @JustPythonLanguage что бы пофиксил, подробнее:\n\n```\n{error}\n```", parse_mode="markdown")
+
+    if len(chats[message.from_user.id]) >= MAX_CHAT_LENGHT:
+        chats[message.from_user.id] = [{"role": "system", "content": START_PROMPTS["base"]}]
+    
 
 async def start():
     await dp.start_polling(bot)
