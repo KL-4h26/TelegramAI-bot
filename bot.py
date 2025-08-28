@@ -1,7 +1,8 @@
-from aiogram import Bot, Dispatcher, exceptions
+from aiogram import Bot, Dispatcher, exceptions, F
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from config import *
+import httpx
 from openai import OpenAI
 import asyncio
 import re
@@ -26,6 +27,7 @@ client = OpenAI(
 chats = {
 
 }
+
 
 def user_chat(user_id: int):
     global chats
@@ -62,19 +64,27 @@ async def set_model(message: Message):
     # Проверка на админа
     if message.from_user.id in ADMINS:
 
-        # получение модели
-        get_model = re.search(r"^/set_model\s(.+)", message.text)
+        async with httpx.AsyncClient() as client:
+            response = await client.get("https://api.onlysq.ru/ai/models")
+            response.raise_for_status()
+            response = response.json()["models"]
 
-        # Проверка на присутствие текста
-        if get_model == None:
-            await message.answer("❗ Пожалуйста укажите модель (/set_model <имя модели>)")
-            return
-        
-        # Получение
-        model = get_model.group(1)
+        temp = []
 
-        # Изменение
-        await message.answer("✅ Успешно изменена модель")
+        models = InlineKeyboardMarkup(inline_keyboard=[
+            
+        ])
+
+        for m in response.keys():
+            if len(temp) == 2:
+                models.inline_keyboard.append(temp)
+                temp = []
+                continue
+
+            temp.append(InlineKeyboardButton(text=m, callback_data=f"setmodel {m}"))
+
+
+        await message.answer("Доступные модели:", reply_markup=models)
         return
 
 
@@ -133,14 +143,14 @@ async def ai_responce(message: Message):
 
     chats[message.from_user.id].append({"role": "user", "content": get_prompt.group(1)})
   
-
-    completion = client.chat.completions.create(
-        model=model,
-        messages=user_chat(message.from_user.id)
-    )
         
     # Ответ chat
     try:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=user_chat(message.from_user.id)
+        )
+
         await message.reply(completion.choices[0].message.content, parse_mode="markdown")
 
     except exceptions.TelegramBadRequest as error:
@@ -160,6 +170,19 @@ async def ai_responce(message: Message):
     if len(chats[message.from_user.id]) >= MAX_CHAT_LENGHT:
         chats[message.from_user.id] = [{"role": "system", "content": START_PROMPTS["base"]}]
     
+
+@dp.callback_query(F.data.startswith("setmodel"))
+async def set_model(clbq: CallbackQuery):
+
+    if clbq.from_user.id in ADMINS:
+        global model
+
+        model = clbq.data.split()[1]
+        await clbq.message.edit_text("⚙️ Модель успешно изменена")
+        return
+    
+    clbq.answer("Неа")
+
 
 async def start():
     await dp.start_polling(bot)
