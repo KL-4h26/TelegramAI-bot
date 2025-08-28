@@ -12,6 +12,7 @@ git clone https://github.com/KL-4h26/TelegramAI-bot
 2. Install requirements:
 ```bash
 pip install aiogram openai
+```
 
 3. Change config.py:
 Get the token from @BotFather and paste it into BOT_TOKEN
