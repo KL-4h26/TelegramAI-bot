@@ -6,7 +6,7 @@
 
 1. Install:
 ```bash
-git clone https://github.com/KL-4h26/TelegramAI-gemini-
+git clone https://github.com/KL-4h26/TelegramAI-bot
 ```
 
 2. Install requirements:
