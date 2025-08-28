@@ -1,6 +1,6 @@
 
-ADMINS = ()
-BOT_TOKEN = "" 
+ADMINS = (6186175655,)
+BOT_TOKEN = "8075786493:AAHN4Ouep59U0jdJVMsNerTRq8eMg2e0JAo" 
 OPENAI_TOKEN = "openai" 
 model = "gemini-2.0-flash"
 MAX_CHAT_LENGHT = 5
