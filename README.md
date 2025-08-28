@@ -11,7 +11,7 @@ git clone https://github.com/KL-4h26/TelegramAI-bot
 
 2. Install requirements:
 ```bash
-pip install aiogram openai
+pip install aiogram openai httpx
 ```
 
 3. Change config.py:
