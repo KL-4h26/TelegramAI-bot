@@ -7,7 +7,7 @@ from openai import OpenAI
 import asyncio
 import re
 
-
+# START_PROMPTS
 disable = False
 
 bot = Bot(token=BOT_TOKEN)
@@ -29,13 +29,13 @@ chats = {
 }
 
 
-def user_chat(user_id: int):
+def user_chat(user_id: int, username: str):
     global chats
 
     if user_id in chats:
         return chats[user_id]
     
-    chats[user_id] = [{"role": "system", "content": START_PROMPTS["base"]}]
+    chats[user_id] = [{"role": "system", "content": START_PROMPTS["base"](user=username)}]
 
     return chats[user_id]
     
@@ -96,7 +96,7 @@ async def reload_chat(message: Message):
     global chats
 
     # Создание нового чата
-    chats[message.from_user.id] = [{"role": "system", "content": START_PROMPTS["base"]}]
+    chats[message.from_user.id] = [{"role": "system", "content": START_PROMPTS["base"](user=message.from_user.username)}]
 
     # Уведомление
     await message.answer("❗Создан новый чат")
@@ -130,7 +130,7 @@ async def ai_responce(message: Message):
         return
     
     # Создаем чат если еще не создан
-    user_chat(message.from_user.id)
+    user_chat(message.from_user.id, message.from_user.username)
 
     # Парсинг сообщения
     get_prompt = re.search(r"^/ai\s(.+)", message.text)
@@ -143,12 +143,12 @@ async def ai_responce(message: Message):
 
     chats[message.from_user.id].append({"role": "user", "content": get_prompt.group(1)})
   
-        
+    # print(chats[message.from_user.id])
     # Ответ chat
     try:
         completion = client.chat.completions.create(
             model=model,
-            messages=user_chat(message.from_user.id)
+            messages=user_chat(message.from_user.id, message.from_user.username)
         )
 
         await message.reply(completion.choices[0].message.content, parse_mode="markdown")
@@ -168,7 +168,7 @@ async def ai_responce(message: Message):
         await message.answer(f"⚙️ Оооп, произошла ошибка, скажите @JustPythonLanguage что бы пофиксил, подробнее:\n\n```\n{error}\n```", parse_mode="markdown")
 
     if len(chats[message.from_user.id]) >= MAX_CHAT_LENGHT:
-        chats[message.from_user.id] = [{"role": "system", "content": START_PROMPTS["base"]}]
+        chats[message.from_user.id] = [{"role": "system", "content": START_PROMPTS["base"](user=message.from_user.username)}]
     
 
 @dp.callback_query(F.data.startswith("setmodel"))
