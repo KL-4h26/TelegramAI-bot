@@ -1,6 +1,6 @@
 
 ADMINS = ()
-BOT_TOKEN = "7074203018:AAEXsHmH5F2-46hefb9M6ypEpEEWUrQmD0w" 
+BOT_TOKEN = "" 
 OPENAI_TOKEN = "openai" 
 model = "gemini-2.0-flash"
 MAX_CHAT_LENGHT = 5
